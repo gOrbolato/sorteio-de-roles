@@ -132,7 +132,6 @@ function renderizarHistorico() {
     }
 
     [...estado.historico].reverse().forEach(item => {
-        // Define um título padrão caso esteja vazio
         const tituloSorteio = item.titulo || 'Sorteio Rápido';
 
         const div = document.createElement('div');
@@ -155,8 +154,15 @@ function verificarBotao() {
 }
 
 // ===========================
-// Lógica do Sorteio
+// Lógica Avançada de Sorteio (Crypto API)
 // ===========================
+
+// Função auxiliar que usa o hardware para gerar número aleatório
+function gerarNumeroSeguro(max) {
+    const array = new Uint32Array(1);
+    window.crypto.getRandomValues(array);
+    return array[0] % max;
+}
 
 function iniciarSorteio() {
     if (estado.participantes.length < 2) return;
@@ -176,9 +182,13 @@ function iniciarSorteio() {
 
     let contador = 0;
     const totalGiros = 25; 
+    
+    // Efeito visual de roleta
     const intervalo = setInterval(() => {
-        const nomeAleatorio = estado.participantes[Math.floor(Math.random() * estado.participantes.length)];
-        elAnimacao.innerText = nomeAleatorio;
+        // Usa random simples apenas para a animação visual (não afeta o resultado final)
+        const indexVisual = Math.floor(Math.random() * estado.participantes.length);
+        elAnimacao.innerText = estado.participantes[indexVisual];
+        
         contador++;
         if (contador >= totalGiros) {
             clearInterval(intervalo);
@@ -188,13 +198,24 @@ function iniciarSorteio() {
 }
 
 function finalizarSorteio(elNome, elFrase) {
-    const vencedorIndex = Math.floor(Math.random() * estado.participantes.length);
-    const vencedorNome = estado.participantes[vencedorIndex];
-    const frase = frasesParabens[Math.floor(Math.random() * frasesParabens.length)];
-    
-    // Captura o título ATUAL do input
+    // 1. Obtém o último vencedor para evitar repetição imediata
+    const ultimoVencedor = estado.historico.length > 0 ? estado.historico[estado.historico.length - 1].nome : null;
+    let vencedorIndex;
+    let vencedorNome;
+    let tentativas = 0;
+
+    // 2. Loop de Segurança: Tenta sortear alguém diferente do anterior
+    // (Só funciona se houver mais de 1 pessoa na lista. Tenta 5 vezes antes de desistir)
+    do {
+        vencedorIndex = gerarNumeroSeguro(estado.participantes.length);
+        vencedorNome = estado.participantes[vencedorIndex];
+        tentativas++;
+    } while (vencedorNome === ultimoVencedor && estado.participantes.length > 1 && tentativas < 5);
+
+    const frase = frasesParabens[gerarNumeroSeguro(frasesParabens.length)];
     const tituloAtual = document.getElementById('tituloSorteio').value;
 
+    // 3. Exibe Resultado
     elNome.innerText = vencedorNome;
     void elNome.offsetWidth; 
     elNome.classList.add('animacao-vencedor');
@@ -205,11 +226,11 @@ function finalizarSorteio(elNome, elFrase) {
 
     dispararFogos();
 
-    // Salva no histórico COM O TÍTULO
+    // 4. Salva
     const agora = new Date();
     estado.historico.push({
         nome: vencedorNome,
-        titulo: tituloAtual, // Nova propriedade salva
+        titulo: tituloAtual,
         data: agora.toLocaleDateString() + ' às ' + agora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
     });
     
