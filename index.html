@@ -3,17 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteador Moderno</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link rel="stylesheet" type="text/css" href="./styles/styles.css">
-    <title>Sorteio dos Roles</title>
 </head>
 <body>
-    <div class="container">
-        <h2>Sorteio dos Roles</h2>
-        <button onclick="exibirCaixaDialogo()">Adicionar Opção</button>
-        <button onclick="realizarSorteio()">Sortear</button>
-        <div id="opcoes-container"></div>
-        <p id="resultado"></p>
+
+    <div class="main-container">
+        <header>
+            <h1><i class="fas fa-dice"></i> Sorteio</h1>
+            <p>Organize seus sorteios de forma rápida e justa.</p>
+        </header>
+
+        <div class="card input-area">
+            <div class="input-group">
+                <label for="tituloSorteio">O que será sorteado?</label>
+                <input type="text" id="tituloSorteio" placeholder="Ex: Quem paga a pizza?">
+            </div>
+
+            <div class="input-group">
+                <label>Adicionar Participantes</label>
+                <div class="row">
+                    <input type="text" id="inputNome" placeholder="Digite um nome..." onkeypress="checarEnter(event)">
+                    <button onclick="adicionarParticipante()" class="btn-add" title="Adicionar"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card list-area">
+            <div class="header-list">
+                <h3>Participantes <span id="contador">(0)</span></h3>
+                <button onclick="limparTudo()" class="btn-text text-danger" title="Apaga participantes e histórico">Limpar tudo</button>
+            </div>
+            <div id="opcoes-container" class="lista-scroll">
+                <p class="empty-state">Nenhum participante adicionado ainda.</p>
+            </div>
+        </div>
+
+        <div class="card history-area">
+            <div class="header-list">
+                <h3><i class="fas fa-trophy" style="color: gold;"></i> Histórico Recente</h3>
+            </div>
+            <div id="historico-container" class="lista-scroll short-list">
+                <p class="empty-state">Nenhum sorteio realizado ainda.</p>
+            </div>
+        </div>
+
+        <button onclick="iniciarSorteio()" class="btn-sortear" id="btnSortear" disabled>
+            REALIZAR SORTEIO
+        </button>
     </div>
+
+    <div id="modalResultado" class="modal hidden">
+        <div class="modal-content">
+            <span class="icone-topo">🎉</span>
+            <h2 id="tituloResultado">O Vencedor é...</h2>
+            
+            <div class="winner-box">
+                <div id="animacaoNomes" class="roulette">...</div>
+            </div>
+
+            <p id="fraseParabens" class="frase-efeito"></p>
+
+            <div class="modal-actions">
+                <button onclick="fecharModal()" class="btn-secondary">Fechar</button>
+                <button onclick="iniciarSorteio()" class="btn-primary">Sortear Novamente</button>
+            </div>
+        </div>
+    </div>
+
     <script src="./main/script.js"></script>
 </body>
 </html>

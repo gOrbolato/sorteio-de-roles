@@ -1,33 +1,246 @@
-let opcoes = [];
+// ===========================
+// Configuração e Estado
+// ===========================
 
-function exibirCaixaDialogo() {
-    const opcao = prompt('Digite uma opção:');
-    if (opcao) {
-        opcoes.push(opcao);
-        atualizarOpcoes();
+let estado = {
+    titulo: '',
+    participantes: [],
+    historico: [] 
+};
+
+const frasesParabens = [
+    "Hoje a sorte sorriu para você! 🌟",
+    "Olha só quem ganhou! 🏆",
+    "Não foi manipulado, eu juro! 🤖",
+    "Prepare-se, a vez é sua! 🚀",
+    "O destino escolheu você! ✨",
+    "A vitória é doce! 🍬",
+    "Parabéns! Você foi o escolhido(a)! 🤩"
+];
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    carregarDados();
+    renderizarLista();
+    renderizarHistorico();
+});
+
+// ===========================
+// Persistência
+// ===========================
+
+function salvarDados() {
+    const inputTitulo = document.getElementById('tituloSorteio');
+    estado.titulo = inputTitulo.value;
+    localStorage.setItem('sorteioDados', JSON.stringify(estado));
+    verificarBotao();
+}
+
+function carregarDados() {
+    const dadosSalvos = localStorage.getItem('sorteioDados');
+    if (dadosSalvos) {
+        estado = { ...estado, ...JSON.parse(dadosSalvos) };
+        document.getElementById('tituloSorteio').value = estado.titulo || '';
     }
 }
 
-function atualizarOpcoes() {
-    const opcoesContainer = document.getElementById('opcoes-container');
-    opcoesContainer.innerHTML = '';
+// ===========================
+// Gerenciamento de Participantes
+// ===========================
 
-    opcoes.forEach(opcao => {
-        const opcaoDiv = document.createElement('div');
-        opcaoDiv.className = 'opcao';
-        opcaoDiv.textContent = opcao;
-        opcoesContainer.appendChild(opcaoDiv);
-    });
+function adicionarParticipante() {
+    const input = document.getElementById('inputNome');
+    const nome = input.value.trim();
+
+    if (nome) {
+        if(estado.participantes.includes(nome)) {
+            alert("Este nome já está na lista!");
+            input.focus();
+            return;
+        }
+        estado.participantes.push(nome);
+        input.value = '';
+        input.focus();
+        salvarDados();
+        renderizarLista();
+    }
 }
 
-function realizarSorteio() {
-    const resultadoElemento = document.getElementById('resultado');
+function checarEnter(event) {
+    if (event.key === 'Enter') adicionarParticipante();
+}
+
+function removerParticipante(index) {
+    estado.participantes.splice(index, 1);
+    salvarDados();
+    renderizarLista();
+}
+
+function limparTudo() {
+    if (confirm('ATENÇÃO: Isso apagará todos os participantes E O HISTÓRICO. Continuar?')) {
+        estado.participantes = [];
+        estado.historico = [];
+        estado.titulo = '';
+        document.getElementById('tituloSorteio').value = '';
+        salvarDados();
+        renderizarLista();
+        renderizarHistorico();
+    }
+}
+
+// ===========================
+// Renderização
+// ===========================
+
+function renderizarLista() {
+    const container = document.getElementById('opcoes-container');
+    const contador = document.getElementById('contador');
     
-    if (opcoes.length < 2) {
-        resultadoElemento.textContent = 'É necessário fornecer pelo menos duas opções.';
+    container.innerHTML = '';
+    contador.textContent = `(${estado.participantes.length})`;
+
+    if (estado.participantes.length === 0) {
+        container.innerHTML = '<p class="empty-state">Nenhum participante adicionado.</p>';
+        verificarBotao();
         return;
     }
 
-    const opcaoSorteada = opcoes[Math.floor(Math.random() * opcoes.length)];
-    resultadoElemento.textContent = 'A opção sorteada é: ' + opcaoSorteada;
+    estado.participantes.forEach((nome, index) => {
+        const div = document.createElement('div');
+        div.className = 'opcao-item';
+        div.style.animationDelay = `${index * 0.05}s`;
+        div.innerHTML = `
+            <span style="font-weight: 500;">${nome}</span>
+            <button class="btn-delete" onclick="removerParticipante(${index})" title="Remover">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        container.appendChild(div);
+    });
+    
+    container.scrollTop = container.scrollHeight;
+    verificarBotao();
 }
+
+function renderizarHistorico() {
+    const container = document.getElementById('historico-container');
+    container.innerHTML = '';
+
+    if (estado.historico.length === 0) {
+        container.innerHTML = '<p class="empty-state">Nenhum sorteio realizado ainda.</p>';
+        return;
+    }
+
+    [...estado.historico].reverse().forEach(item => {
+        // Define um título padrão caso esteja vazio
+        const tituloSorteio = item.titulo || 'Sorteio Rápido';
+
+        const div = document.createElement('div');
+        div.className = 'winner-item';
+        div.innerHTML = `
+            <i class="fas fa-trophy" style="color: var(--gold); font-size: 1.2rem;"></i>
+            <div class="winner-info">
+                <span class="winner-title">${tituloSorteio}</span>
+                <span class="winner-name">🏆 ${item.nome}</span>
+                <span class="winner-time">${item.data}</span>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function verificarBotao() {
+    const btn = document.getElementById('btnSortear');
+    btn.disabled = estado.participantes.length < 2;
+}
+
+// ===========================
+// Lógica do Sorteio
+// ===========================
+
+function iniciarSorteio() {
+    if (estado.participantes.length < 2) return;
+
+    const modal = document.getElementById('modalResultado');
+    const elAnimacao = document.getElementById('animacaoNomes');
+    const elTitulo = document.getElementById('tituloResultado');
+    const elFrase = document.getElementById('fraseParabens');
+
+    const tituloSorteio = document.getElementById('tituloSorteio').value;
+    elTitulo.innerText = tituloSorteio ? `Resultado: ${tituloSorteio}` : "O Vencedor é...";
+    
+    elFrase.style.opacity = '0';
+    elAnimacao.classList.remove('animacao-vencedor');
+    elAnimacao.style.color = '#ccc';
+    modal.classList.add('visible');
+
+    let contador = 0;
+    const totalGiros = 25; 
+    const intervalo = setInterval(() => {
+        const nomeAleatorio = estado.participantes[Math.floor(Math.random() * estado.participantes.length)];
+        elAnimacao.innerText = nomeAleatorio;
+        contador++;
+        if (contador >= totalGiros) {
+            clearInterval(intervalo);
+            finalizarSorteio(elAnimacao, elFrase);
+        }
+    }, 80);
+}
+
+function finalizarSorteio(elNome, elFrase) {
+    const vencedorIndex = Math.floor(Math.random() * estado.participantes.length);
+    const vencedorNome = estado.participantes[vencedorIndex];
+    const frase = frasesParabens[Math.floor(Math.random() * frasesParabens.length)];
+    
+    // Captura o título ATUAL do input
+    const tituloAtual = document.getElementById('tituloSorteio').value;
+
+    elNome.innerText = vencedorNome;
+    void elNome.offsetWidth; 
+    elNome.classList.add('animacao-vencedor');
+    
+    elFrase.innerText = frase;
+    elFrase.style.opacity = '1';
+    elFrase.style.transition = 'opacity 1s ease 0.5s';
+
+    dispararFogos();
+
+    // Salva no histórico COM O TÍTULO
+    const agora = new Date();
+    estado.historico.push({
+        nome: vencedorNome,
+        titulo: tituloAtual, // Nova propriedade salva
+        data: agora.toLocaleDateString() + ' às ' + agora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+    });
+    
+    salvarDados();
+    renderizarHistorico();
+}
+
+function fecharModal() {
+    document.getElementById('modalResultado').classList.remove('visible');
+}
+
+function dispararFogos() {
+    const duration = 3 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 2000 };
+
+    function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+
+    const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+        const particleCount = 50 * (timeLeft / duration);
+
+        confetti(Object.assign({}, defaults, { 
+            particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } 
+        }));
+        confetti(Object.assign({}, defaults, { 
+            particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } 
+        }));
+    }, 250);
+}
+
+document.getElementById('tituloSorteio').addEventListener('input', salvarDados);
+document.addEventListener('keydown', (e) => { if(e.key === "Escape") fecharModal(); });
